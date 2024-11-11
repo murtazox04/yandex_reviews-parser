@@ -1,4 +1,5 @@
 import time
+import hashlib
 from dataclasses import asdict
 
 from selenium.webdriver.common.by import By
@@ -63,10 +64,16 @@ class Parser:
         except NoSuchElementException:
             text = None
         try:
-            stars = elem.find_elements(By.XPATH, ".//div[@class='business-rating-badge-view__stars _spacing_normal']/span")
+            stars = elem.find_elements(By.XPATH, ".//div[@class='business-rating-badge-view__stars']/span")
             stars = ParserHelper.get_count_star(stars)
         except NoSuchElementException:
             stars = 0
+
+        try:
+            likes = elem.find_element(By.XPATH, ".//div[@class='business-reactions-view__counter']").text
+            likes = int(likes)
+        except NoSuchElementException:
+            likes = 0
 
         try:
             answer = elem.find_element(By.CLASS_NAME, "business-review-view__comment-expand")
@@ -77,13 +84,17 @@ class Parser:
                 answer = None
         except NoSuchElementException:
             answer = None
+        review_id_content = f"{name}{date}{text}".encode("utf-8")
+        review_id = hashlib.md5(review_id_content).hexdigest()
         item = Review(
+            review_id=review_id,
             name=name,
             icon_href=icon_href,
             date=ParserHelper.form_date(date),
             text=text,
             stars=stars,
-            answer=answer
+            answer=answer,
+            likes=likes
         )
         return asdict(item)
 
@@ -112,7 +123,7 @@ class Parser:
             xpath_count_rating = ".//div[@class='business-summary-rating-badge-view__rating-count']/span[@class='business-rating-amount-view _summary']"
             count_rating_list = rating_block.find_element(By.XPATH, xpath_count_rating).text
             count_rating = ParserHelper.list_to_num(count_rating_list)
-            xpath_stars = ".//div[@class='business-rating-badge-view__stars _spacing_normal']/span"
+            xpath_stars = ".//div[@class='business-rating-badge-view__stars']/span"
             stars = ParserHelper.get_count_star(rating_block.find_elements(By.XPATH, xpath_stars))
         except NoSuchElementException:
             rating = 0
@@ -178,6 +189,7 @@ class Parser:
         {
             company_reviews:[
                 {
+                  id: str
                   name: str
                   icon_href: str
                   date: timestamp
