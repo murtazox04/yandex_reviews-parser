@@ -4,6 +4,7 @@ from typing import Union
 
 @dataclass
 class Review:
+    review_id: str
     name: str
     icon_href: Union[str, None]
     date: float
