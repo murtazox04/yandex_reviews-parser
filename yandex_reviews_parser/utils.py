@@ -1,6 +1,6 @@
 import time
-
-import undetected_chromedriver
+import shutil
+import undetected_chromedriver as uc
 from yandex_reviews_parser.parsers import Parser
 
 
@@ -12,15 +12,29 @@ class YandexParser:
         self.id_yandex = id_yandex
 
     def __open_page(self):
-        url: str = 'https://yandex.ru/maps/org/{}/reviews/'.format(str(self.id_yandex))
-        opts = undetected_chromedriver.ChromeOptions()
+        url = f'https://yandex.ru/maps/org/{self.id_yandex}/reviews/'
+
+        opts = uc.ChromeOptions()
+
+        chrome_path = shutil.which("google-chrome") or shutil.which("chrome")
+        if chrome_path:
+            opts.binary_location = chrome_path
+        else:
+            raise RuntimeError("Google Chrome binary not found!")
+
         opts.add_argument('--no-sandbox')
         opts.add_argument('--disable-dev-shm-usage')
-        opts.add_argument('headless')
+        opts.add_argument('--headless')
         opts.add_argument('--disable-gpu')
-        driver = undetected_chromedriver.Chrome(options=opts)
-        parser = Parser(driver)
+
+        driver_path = shutil.which("chromedriver")
+        if not driver_path:
+            raise RuntimeError("ChromeDriver not found!")
+
+        driver = uc.Chrome(options=opts, driver_executable_path=driver_path)
+
         driver.get(url)
+        parser = Parser(driver)
         return parser
 
     def parse(self, type_parse: str = 'default') -> dict:
