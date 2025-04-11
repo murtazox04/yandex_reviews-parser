@@ -1,7 +1,7 @@
-import time
 import shutil
 import undetected_chromedriver as uc
 from yandex_reviews_parser.parsers import Parser
+from selenium.webdriver.support.ui import WebDriverWait
 
 
 class YandexParser:
@@ -12,20 +12,21 @@ class YandexParser:
         self.id_yandex = id_yandex
 
     def __open_page(self):
-        url = f'https://yandex.ru/maps/org/{self.id_yandex}/reviews/'
+        url = f"https://yandex.uz/maps/org/{self.id_yandex}/reviews/"
 
         opts = uc.ChromeOptions()
+        opts.add_argument("--no-sandbox")
+        opts.add_argument("--disable-dev-shm-usage")
+        opts.add_argument("--headless=new")  # Yangi headless rejim
+        opts.add_argument("--disable-gpu")
+        opts.add_argument("--window-size=1920,1080")
+        opts.add_argument("--lang=ru-RU")
 
         chrome_path = shutil.which("google-chrome") or shutil.which("chrome")
         if chrome_path:
             opts.binary_location = chrome_path
         else:
             raise RuntimeError("Google Chrome binary not found!")
-
-        opts.add_argument('--no-sandbox')
-        opts.add_argument('--disable-dev-shm-usage')
-        opts.add_argument('--headless')
-        opts.add_argument('--disable-gpu')
 
         driver_path = shutil.which("chromedriver")
         if not driver_path:
@@ -34,32 +35,33 @@ class YandexParser:
         driver = uc.Chrome(options=opts, driver_executable_path=driver_path)
 
         driver.get(url)
+
+        try:
+            WebDriverWait(driver, 10).until(
+                lambda d: "reviews" in d.current_url
+                or "review" in d.page_source.lower()
+            )
+        except Exception:
+            raise RuntimeError("Review sahifa to‘liq yuklanmadi!")
+
         parser = Parser(driver)
         return parser
 
-    def parse(self, type_parse: str = 'default') -> dict:
-        """
-        Функция получения данных в виде
-        @param type_parse: Тип данных, принимает значения:
-            default - получает все данные по аккаунту
-            company - получает данные по компании
-            reviews - получает данные по отчетам
-        @return: Данные по запрошенному типу
-        """
-        result:dict = {}
+    def parse(self, type_parse: str = "default") -> dict:
+        result: dict = {}
         page = self.__open_page()
-        time.sleep(4)
         try:
-            if type_parse == 'default':
+            if type_parse == "default":
                 result = page.parse_all_data()
-            if type_parse == 'company':
+            elif type_parse == "company":
                 result = page.parse_company_info()
-            if type_parse == 'reviews':
+            elif type_parse == "reviews":
                 result = page.parse_reviews()
+            else:
+                raise ValueError(f"Unknown type_parse: {type_parse}")
         except Exception as e:
-            print(e)
-            return result
+            print("[ERROR]", e)
+            result = {"error": str(e)}
         finally:
-            page.driver.close()
             page.driver.quit()
-            return result
+        return result
