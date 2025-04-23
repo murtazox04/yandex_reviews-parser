@@ -115,20 +115,27 @@ class Parser:
         except NoSuchElementException:
             name = None
         try:
-            xpath_rating_block = ".//div[@class='business-summary-rating-badge-view__rating-and-stars']"
-            rating_block = self.driver.find_element(By.XPATH, xpath_rating_block)
-            xpath_rating = ".//div[@class='business-summary-rating-badge-view__rating']/span[contains(@class, 'business-summary-rating-badge-view__rating-text')]"
-            rating = rating_block.find_elements(By.XPATH, xpath_rating)
-            rating = ParserHelper.format_rating(rating)
-            xpath_count_rating = ".//div[@class='business-summary-rating-badge-view__rating-count']/span[@class='business-rating-amount-view _summary']"
-            count_rating_list = rating_block.find_element(By.XPATH, xpath_count_rating).text
-            count_rating = ParserHelper.list_to_num(count_rating_list)
-            xpath_stars = ".//div[@class='business-rating-badge-view__stars']/span"
-            stars = ParserHelper.get_count_star(rating_block.find_elements(By.XPATH, xpath_stars))
+            xpath_rating_meta = ".//span[@itemprop='reviewRating']/meta[@itemprop='ratingValue']"
+            rating_element = self.driver.find_element(By.XPATH, xpath_rating_meta)
+            rating = float(rating_element.get_attribute("content"))
+            count_rating = 1  # Default if not present in review
+            xpath_stars = ".//div[contains(@class, 'business-rating-badge-view__stars')]/span[contains(@class, '_full')]"
+            stars = len(self.driver.find_elements(By.XPATH, xpath_stars))
         except NoSuchElementException:
-            rating = 0
-            count_rating = 0
-            stars = 0
+            try:
+                xpath_rating_block = ".//div[@class='business-summary-rating-badge-view__rating-and-stars']"
+                rating_block = self.driver.find_element(By.XPATH, xpath_rating_block)
+                xpath_rating = ".//div[@class='business-summary-rating-badge-view__rating']/span[contains(@class, 'business-summary-rating-badge-view__rating-text')]"
+                rating = ParserHelper.format_rating(rating_block.find_elements(By.XPATH, xpath_rating))
+                xpath_count_rating = ".//div[@class='business-summary-rating-badge-view__rating-count']/span[@class='business-rating-amount-view _summary']"
+                count_rating_list = rating_block.find_element(By.XPATH, xpath_count_rating).text
+                count_rating = ParserHelper.list_to_num(count_rating_list)
+                xpath_stars = ".//div[@class='business-rating-badge-view__stars']/span[contains(@class, '_full')]"
+                stars = len(rating_block.find_elements(By.XPATH, xpath_stars))
+            except NoSuchElementException:
+                rating = 0
+                count_rating = 0
+                stars = 0
 
         item = Info(
             name=name,
