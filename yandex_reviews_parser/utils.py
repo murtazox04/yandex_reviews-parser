@@ -17,7 +17,7 @@ class YandexParser:
         opts = uc.ChromeOptions()
         opts.add_argument("--no-sandbox")
         opts.add_argument("--disable-dev-shm-usage")
-        opts.add_argument("--headless=new")  # Yangi headless rejim
+        # opts.add_argument("--headless=new")  # Debugging - disable headless for now
         opts.add_argument("--disable-gpu")
         opts.add_argument("--window-size=1920,1080")
         opts.add_argument("--lang=ru-RU")
@@ -37,20 +37,20 @@ class YandexParser:
         driver.get(url)
 
         try:
-            WebDriverWait(driver, 10).until(
+            WebDriverWait(driver, 30).until(
                 lambda d: "reviews" in d.current_url
                 or "review" in d.page_source.lower()
             )
         except Exception:
-            raise RuntimeError("Review sahifa to‘liq yuklanmadi!")
+            raise RuntimeError("Review page did not load properly!")
 
         parser = Parser(driver)
         return parser
 
     def parse(self, type_parse: str = "default") -> dict:
         result: dict = {}
-        page = self.__open_page()
         try:
+            page = self.__open_page()
             if type_parse == "default":
                 result = page.parse_all_data()
             elif type_parse == "company":
@@ -63,5 +63,6 @@ class YandexParser:
             print("[ERROR]", e)
             result = {"error": str(e)}
         finally:
-            page.driver.quit()
+            if "page" in locals():
+                page.driver.quit()
         return result
