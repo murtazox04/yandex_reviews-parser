@@ -1,6 +1,5 @@
 import shutil
 import undetected_chromedriver as uc
-from selenium.webdriver import ChromeOptions
 from yandex_reviews_parser.parsers import Parser
 from selenium.webdriver.support.ui import WebDriverWait
 
@@ -13,13 +12,17 @@ class YandexParser:
         url = f"https://yandex.uz/maps/org/{self.id_yandex}/reviews/"
         print(f"Opening URL: {url}")
 
-        opts = ChromeOptions()
+        opts = uc.ChromeOptions()
         opts.add_argument("--no-sandbox")
         opts.add_argument("--disable-dev-shm-usage")
-        # opts.add_argument("--headless=new")  # for debug
+        # Disable headless while debugging
+        # opts.add_argument("--headless=new")
         opts.add_argument("--disable-gpu")
         opts.add_argument("--window-size=1920,1080")
         opts.add_argument("--lang=ru-RU")
+
+        # ⚡ Add manual hack:
+        opts.headless = False
 
         chrome_path = shutil.which("google-chrome") or shutil.which("chrome")
         if chrome_path:
